@@ -68,9 +68,9 @@ public class BlockContainer : FrameworkElement
         set => SetValue(BorderBrushProperty, value);
     }
 
-    public ObservableCollection<Location> DisabledLocations { get; } = [];
+    public FuckedObservableCollection<Location> DisabledLocations { get; } = [];
 
-    private ObservableCollection<(Location, Block)> Blocks { get; } = [];
+    private FuckedObservableCollection<(Location, Block)> Blocks { get; } = [];
 
     public Location PointToLocation(Point point)
     {

@@ -69,7 +69,7 @@ public class PolygonContainer : Control, INotifyPropertyChanged
         set => SetValue(UniformProperty, value);
     }
 
-    public ObservableCollection<Polygon> Children { get; } = [];
+    public FuckedObservableCollection<Polygon> Children { get; } = [];
 
     public virtual PolygonContainer Clone()
     {

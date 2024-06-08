@@ -417,9 +417,9 @@ namespace DormPuzzle.Game.Tetris
         /// </summary>
         public bool KeepTopOnly;
 
-        private readonly int TotalBlockNums => BlockNums.Aggregate(0, (acc, b) => acc + b);
+        private readonly int TotalBlockNums => BlockNums.Aggregate(0, static (acc, b) => acc + b);
 
-        public SolveOptions(int width, int height, int[] blockNums)
+        public SolveOptions(int width, int height, List<int> blockNums)
         {
             Width = width;
             Height = height;

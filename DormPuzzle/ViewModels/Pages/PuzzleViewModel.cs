@@ -1,4 +1,6 @@
-﻿using System.Collections.ObjectModel;
+﻿using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -6,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using DormPuzzle.Contracts.ViewModels;
 using DormPuzzle.Controls.Blocks;
 using DormPuzzle.Game.Tetris;
+using DormPuzzle.Helpers;
 using DormPuzzle.Models;
 using DormPuzzle.Views.Pages;
 
@@ -14,11 +17,11 @@ namespace DormPuzzle.ViewModels.Pages;
 public partial class PuzzleViewModel(PuzzlePage puzzlePage) : UViewModel<PuzzlePage>(puzzlePage)
 {
     [ObservableProperty]
-    private ObservableCollection<Block> blocks = new(typeof(Block).Assembly.GetTypes()
+    private FuckedObservableCollection<Block> blocks = new(typeof(Block).Assembly.GetTypes()
                                                                            .Where(type => type.IsSubclassOf(typeof(Block)))
                                                                            .Select(Activator.CreateInstance)
                                                                            .OrderBy(block => ((Block)block!).Order)
-                                                                           .Cast<Block>());
+                                                                           .Cast<Block>().ToList());
 
     [ObservableProperty]
     private int rows = 5;
@@ -27,7 +30,7 @@ public partial class PuzzleViewModel(PuzzlePage puzzlePage) : UViewModel<PuzzleP
     private int columns = 6;
 
     [ObservableProperty]
-    private ObservableCollection<SolutionBind> solutions = [];
+    private FuckedObservableCollection<SolutionBind> solutions = [];
 
     [ObservableProperty]
     private SolutionBind? selectedSolution;
@@ -74,10 +77,15 @@ public partial class PuzzleViewModel(PuzzlePage puzzlePage) : UViewModel<PuzzleP
         }
     }
 
+    private static ConcurrentDictionary<int, string> SolutionNameCache = new();
+
+    private static string GetSolutionName(int index) =>
+        SolutionNameCache.GetOrAdd(index, static index => $"方案 {index}");
+
     [RelayCommand]
     private async Task Run()
     {
-        SolveOptions solveOptions = new(BlockContainer.Columns, BlockContainer.Rows, Blocks.OrderBy(block => block.Order).Select(block => block.Count).ToArray())
+        SolveOptions solveOptions = new(BlockContainer.Columns, BlockContainer.Rows, Blocks.OrderBy(block => block.Order).Select(block => block.Count).ToList())
         {
             Walls = [.. BlockContainer.DisabledLocations],
             KeepTopOnly = true,
@@ -87,7 +95,12 @@ public partial class PuzzleViewModel(PuzzlePage puzzlePage) : UViewModel<PuzzleP
 
         await Task.Run(() =>
         {
-            Solutions = new(SolveOptions.Solve(solveOptions).Take(50).Select((item, index) => { return new SolutionBind($"方案 {index}", item); }));
+            Solutions = new(
+                SolveOptions.Solve(solveOptions)
+                .Take(50)
+                .Select(static (item, index) => new SolutionBind(GetSolutionName(index), item))
+                .ToList()
+            );
         });
 
         if (Solutions.Count > 0)
